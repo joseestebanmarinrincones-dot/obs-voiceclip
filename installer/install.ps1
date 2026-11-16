@@ -223,6 +223,16 @@ if (-not (Test-Path -LiteralPath (Join-Path $target "installer"))) {
     New-Item -ItemType Directory -Force -Path (Join-Path $target "installer") | Out-Null
 }
 Copy-Item -LiteralPath $PSCommandPath -Destination (Join-Path $target "installer\install.ps1") -Force -ErrorAction SilentlyContinue
+$uninstaller = Join-Path $PSScriptRoot "uninstall.ps1"
+if (Test-Path -LiteralPath $uninstaller) {
+    Copy-Item -LiteralPath $uninstaller -Destination (Join-Path $target "installer\uninstall.ps1") -Force
+}
+foreach ($launcher in @("Instalar.bat", "Desinstalar.bat")) {
+    $sourceLauncher = Join-Path $PSScriptRoot $launcher
+    if (Test-Path -LiteralPath $sourceLauncher) {
+        Copy-Item -LiteralPath $sourceLauncher -Destination (Join-Path $target $launcher) -Force
+    }
+}
 
 # 3. Python de OBS
 Write-Step "Configurando Python para OBS"
