@@ -213,9 +213,10 @@ foreach ($item in $items) {
 # No copiar la carpeta vendor (los DLL van dentro del EXE); ahorra ~50 MB.
 $vendor = Join-Path $target "helper\vendor"
 if (Test-Path -LiteralPath $vendor) { Remove-Item -LiteralPath $vendor -Recurse -Force }
-$helperExe = Join-Path $target "helper\voice_helper.exe"
-if (-not (Test-Path -LiteralPath $helperExe)) {
-    Write-Warn "No se encontro helper\voice_helper.exe. El plugin intentara usar Python del sistema."
+$helperExe = Get-ChildItem -LiteralPath (Join-Path $target "helper") -Filter "voice_helper*.exe" -File -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+if (-not $helperExe) {
+    Write-Warn "No se encontro el helper de voz. El plugin intentara usar Python del sistema."
 } else {
     Write-Ok "Archivos copiados en $target"
 }

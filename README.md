@@ -126,7 +126,7 @@ Para publicar una nueva versión:
 ```
 obs_voice_clip.py      Script principal de OBS (Python, sin dependencias externas)
 helper/voice_helper.py Helper de audio + Vosk (se empaqueta como EXE)
-helper/voice_helper.exe Helper compilado (incluido en la release)
+helper/voice_helper-1.0.1.exe Helper compilado (incluido en la release)
 web/                   Panel y overlay (HTML/CSS/JS, sin librerías externas)
 installer/             Instalador/desinstalador para Windows
 tools/                 Scripts de build y empaquetado

@@ -33,10 +33,13 @@ $webStage = Join-Path $stageRoot "web"
 New-Item -ItemType Directory -Force -Path $webStage | Out-Null
 Copy-Item -Path (Join-Path $root "web\*") -Destination $webStage -Recurse -Force
 
-# Helper: EXE y fuente. No incluir vendor (los DLL van dentro del EXE).
+# Helper: EXE versionado y fuente. No incluir vendor (los DLL van dentro del EXE).
+# El nombre versionado evita que una actualizacion falle si el EXE anterior
+# sigue bloqueado por un proceso auxiliar que aun se esta cerrando.
 $helperStage = Join-Path $stageRoot "helper"
 New-Item -ItemType Directory -Force -Path $helperStage | Out-Null
-Copy-Item -LiteralPath $helperExe -Destination $helperStage -Force
+$versionedHelper = Join-Path $helperStage ("voice_helper-$Version.exe")
+Copy-Item -LiteralPath $helperExe -Destination $versionedHelper -Force
 Copy-Item -LiteralPath (Join-Path $root "helper\voice_helper.py") -Destination $helperStage -Force
 
 # Instalador

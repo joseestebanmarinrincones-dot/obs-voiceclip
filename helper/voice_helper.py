@@ -41,7 +41,7 @@ except Exception:  # pragma: no cover - el error se reporta por HTTP
     pyaudio = None
 
 APP_NAME = "ObsVoiceClip"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 DEFAULT_TRIGGERS = [
 
     "clip",
@@ -821,6 +821,14 @@ class HelperServer(ThreadingHTTPServer):
         super().__init__(address, handler)
         self.app = app
         self.token = token
+
+    def handle_error(self, request, client_address):
+        # El plugin sondea /health con frecuencia y puede cerrar la conexion
+        # mientras se responde. No es un error real.
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError)):
+            return
+        logging.warning("Error HTTP en %s: %s", client_address, exc)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

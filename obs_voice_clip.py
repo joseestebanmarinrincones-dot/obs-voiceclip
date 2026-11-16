@@ -47,7 +47,7 @@ import obspython as obs
 # ---------------------------------------------------------------------------
 
 APP_NAME = "ObsVoiceClip"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 PLUGIN_REPO = "joseestebanmarinrincones-dot/obs-voiceclip"
 PLUGIN_RELEASE_ASSET_PREFIX = "obs-voiceclip-"
 DEFAULT_PORT = 17877
@@ -196,7 +196,9 @@ def deep_merge(base: dict, override: dict | None) -> dict:
 
 def load_json_file(path: Path, fallback: Any) -> Any:
     try:
-        with path.open("r", encoding="utf-8") as handle:
+        # utf-8-sig tolera BOM: algunos editores/PowerShell lo añaden al
+        # guardar config.json o history.json a mano.
+        with path.open("r", encoding="utf-8-sig") as handle:
             return json.load(handle)
     except FileNotFoundError:
         return fallback
@@ -716,10 +718,25 @@ class HelperProcess:
         self._monitor: threading.Thread | None = None
 
     def helper_command(self) -> list[str] | None:
-        exe = SCRIPT_DIR / "helper" / "voice_helper.exe"
+        helper_dir = SCRIPT_DIR / "helper"
+        # Los instaladores nuevos usan voice_helper-<version>.exe. Asi una
+        # actualizacion puede escribir un EXE nuevo aunque el anterior siga
+        # bloqueado unos segundos por PyInstaller.
+        versioned: list[tuple[tuple[int, ...], Path]] = []
+        try:
+            for candidate in helper_dir.glob("voice_helper-*.exe"):
+                match = re.search(r"voice_helper-(\d+(?:\.\d+)*)\.exe$", candidate.name, re.I)
+                if match:
+                    versioned.append((version_tuple(match.group(1)), candidate))
+        except Exception:
+            versioned = []
+        if versioned:
+            versioned.sort(key=lambda item: item[0], reverse=True)
+            return [str(versioned[0][1])]
+        exe = helper_dir / "voice_helper.exe"
         if exe.is_file():
             return [str(exe)]
-        script = SCRIPT_DIR / "helper" / "voice_helper.py"
+        script = helper_dir / "voice_helper.py"
         if not script.is_file():
             return None
         candidates = [
@@ -978,9 +995,11 @@ class HelperProcess:
                 )
             return
         try:
-            self.apply_health(self.health(timeout=1.2))
+            self.apply_health(self.health(timeout=2.5))
         except Exception as exc:
-            log(f"Health del helper fallo: {exc}", logging.WARNING)
+            current = STATE.snapshot().get("voice", {}).get("state")
+            if current == "listening":
+                log(f"Health del helper fallo: {exc}", logging.WARNING)
 
 
 # ---------------------------------------------------------------------------
@@ -1656,6 +1675,14 @@ class LocalServer(ThreadingHTTPServer):
         self.port = port
         self.clients: set[queue.Queue] = set()
         self.client_lock = threading.Lock()
+
+    def handle_error(self, request, client_address):
+        # Los clientes SSE (dock/overlay) se reconectan y cierran el socket a
+        # menudo. No llenar el log de OBS con tracebacks esperados.
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError)):
+            return
+        log(f"Error HTTP en {client_address}: {exc}", logging.WARNING)
 
     def add_client(self, client: queue.Queue) -> None:
         with self.client_lock:

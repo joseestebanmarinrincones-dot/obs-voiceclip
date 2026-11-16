@@ -27,8 +27,14 @@ if (-not (Test-Path -LiteralPath (Join-Path $VoskDir "libvosk.dll"))) {
     throw "No se encontro libvosk.dll. Instala vosk con: $Python -m pip install vosk"
 }
 New-Item -ItemType Directory -Force -Path $vendor | Out-Null
-Copy-Item -Path (Join-Path $VoskDir "*.dll") -Destination $vendor -Force
-Write-Host "DLL de Vosk copiadas a $vendor"
+$resolvedVosk = (Resolve-Path -LiteralPath $VoskDir).Path
+$resolvedVendor = (Resolve-Path -LiteralPath $vendor).Path
+if ($resolvedVosk -ne $resolvedVendor) {
+    Copy-Item -Path (Join-Path $VoskDir "*.dll") -Destination $vendor -Force
+    Write-Host "DLL de Vosk copiadas a $vendor"
+} else {
+    Write-Host "Usando las DLL de Vosk ya presentes en $vendor"
+}
 
 & $Python -m PyInstaller `
     --noconfirm --clean --onefile --noconsole `
