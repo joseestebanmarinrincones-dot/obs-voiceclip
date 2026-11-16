@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>ObsVoiceClip</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="panel-page">
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2.5" width="6" height="11" rx="3"></rect>
+            <path d="M5.5 10.5a6.5 6.5 0 0 0 13 0"></path>
+            <path d="M12 17v4.5"></path>
+            <path d="M8.5 21.5h7"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>VoiceClip <span class="version-pill" id="version">v1.0.0</span></h1>
+          <div class="sub">
+            <span>Clips por voz para OBS</span>
+            <span class="version-pill" id="profile-pill">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="top-status" id="top-status">
+        <span class="pill"><span class="dot"></span> Conectando…</span>
+      </div>
+    </header>
+
+    <div class="banner" id="update-banner" hidden>
+      <div class="banner-text">
+        <strong id="update-title">Actualización disponible</strong>
+        <span id="update-sub">Hay una nueva versión de ObsVoiceClip.</span>
+      </div>
+      <div class="banner-actions">
+        <button class="btn small ghost" id="update-later" type="button">Más tarde</button>
+        <button class="btn small primary" id="update-install" type="button">Actualizar</button>
+      </div>
+    </div>
+
+    <div class="notices" id="notices-list" aria-live="polite"></div>
+
+    <main class="dashboard">
+      <div class="column">
+        <section class="card hero">
+          <div class="card-head">
+            <div>
+              <h2>
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"></path><path d="m10 9 5 3-5 3z"></path></svg>
+                </span>
+                Guardar un clip
+              </h2>
+              <p class="card-sub">Toma los últimos segundos de lo que estás emitiendo o grabando.</p>
+            </div>
+            <span class="pill" id="clip-phase-pill"><span class="dot"></span><span id="clip-phase">Listo</span></span>
+          </div>
+
+          <div class="hero-grid">
+            <div>
+              <div class="eyebrow">Duración del clip</div>
+              <div class="big-number"><span id="duration-big">30</span><span> s</span></div>
+              <div class="caption" id="replay-caption">Replay Buffer —</div>
+            </div>
+            <div class="stack" style="min-width: 180px;">
+              <div class="field">
+                <label for="duration-select">Elegir duración</label>
+                <select id="duration-select" aria-label="Duración del clip"></select>
+              </div>
+              <button class="big-clip" id="save-clip" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"></circle><circle cx="12" cy="12" r="3.2"></circle></svg>
+                Guardar clip ahora
+              </button>
+            </div>
+          </div>
+
+          <div class="status-line" id="replay-status" style="margin-top: 12px;">
+            <span class="dot"></span><span>Comprobando Replay Buffer…</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Último clip</h2>
+              <p class="card-sub">El resultado se actualiza aquí y en el overlay.</p>
+            </div>
+            <button class="link-button" id="open-clip-folder" type="button">Abrir carpeta</button>
+          </div>
+          <div class="last-clip">
+            <div class="thumb" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3h9A2.5 2.5 0 0 1 19 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5z"></path><path d="m10 8 5 3-5 3z"></path></svg>
+            </div>
+            <div class="meta">
+              <div class="name" id="last-clip-name">Todavía no hay clips</div>
+              <div class="info" id="last-clip-info">Di “clip” o pulsa Guardar clip.</div>
+            </div>
+            <div class="actions">
+              <button class="btn small" id="upload-last" type="button">Subir a GitHub</button>
+              <a class="btn small primary" id="last-clip-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver en GitHub</a>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="inline-between">
+            <span class="tiny muted">Historial reciente</span>
+            <span class="tiny muted" id="history-count">0 clips</span>
+          </div>
+          <div class="history" id="history-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Voz</h2>
+              <p class="card-sub">Comando por voz con reconocimiento local (Vosk). Nada de audio sale de tu PC.</p>
+            </div>
+            <label class="check" title="Activar o desactivar la escucha">
+              <input type="checkbox" id="voice-toggle">
+              <strong>Activa</strong>
+            </label>
+          </div>
+
+          <div class="voice-box" id="voice-box">
+            <div class="voice-meter" id="voice-meter" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="voice-text">
+              <div class="voice-title" id="voice-title">Voz desactivada</div>
+              <div class="voice-sub" id="voice-sub">Actívala para usar comandos por voz.</div>
+            </div>
+            <button class="btn small" id="voice-restart" type="button">Reiniciar</button>
+          </div>
+
+          <div class="grid-2" style="margin-top: 12px;">
+            <div class="field">
+              <label for="voice-device">Micrófono / audio</label>
+              <div class="inline">
+                <select id="voice-device" aria-label="Dispositivo de audio">
+                  <option value="default">Micrófono por defecto</option>
+                  <option value="loopback">Audio del sistema (loopback)</option>
+                </select>
+                <button class="btn small ghost" id="voice-devices-reload" type="button" title="Buscar dispositivos">↻</button>
+              </div>
+              <span class="hint" id="voice-device-hint">Puedes elegir un micrófono o el audio del sistema.</span>
+            </div>
+            <div class="field">
+              <label for="voice-language">Idioma del modelo</label>
+              <select id="voice-language" aria-label="Idioma">
+                <option value="es">Español (España)</option>
+                <option value="en">English (US)</option>
+              </select>
+              <span class="hint">El modelo se descarga una sola vez.</span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top: 10px;">
+            <label for="voice-sensitivity">Sensibilidad del medidor <span class="muted" id="voice-sensitivity-value">55</span></label>
+            <input type="range" id="voice-sensitivity" min="0" max="100" step="1">
+            <span class="hint">No cambia lo que reconoce Vosk; solo el umbral visual de “te estoy oyendo”.</span>
+          </div>
+
+          <div class="field" style="margin-top: 10px;">
+            <label for="voice-phrases">Frases que activan el clip</label>
+            <textarea id="voice-phrases" placeholder="clip, guarda clip, corta clip…" spellcheck="false"></textarea>
+            <span class="hint">Una frase por línea o separadas por comas. La palabra “clip” sola es suficiente.</span>
+          </div>
+
+          <div class="divider"></div>
+          <div class="inline-between">
+            <div class="status-line" id="model-status"><span class="dot"></span><span>Modelo —</span></div>
+            <div class="inline">
+              <button class="btn small" id="model-download" type="button">Descargar modelo</button>
+              <button class="btn small ghost" id="open-logs" type="button">Abrir logs</button>
+            </div>
+          </div>
+          <div class="progress" id="model-progress-wrap" hidden><span id="model-progress"></span></div>
+          <div class="progress-label" id="model-progress-label" hidden><span id="model-progress-text"></span><span id="model-progress-pct"></span></div>
+        </section>
+      </div>
+
+      <div class="column">
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>GitHub</h2>
+              <p class="card-sub">Cada clip se publica en un repositorio público como release.</p>
+            </div>
+            <span class="pill" id="github-pill"><span class="dot"></span><span>Sin configurar</span></span>
+          </div>
+
+          <div class="stack">
+            <div class="field">
+              <label for="github-token">Token personal (PAT)</label>
+              <div class="token-wrap">
+                <input type="password" id="github-token" autocomplete="off" spellcheck="false" placeholder="ghp_… o github_pat_…">
+                <button class="btn icon-only token-eye" id="github-token-toggle" type="button" aria-label="Mostrar token">👁</button>
+              </div>
+              <span class="hint" id="github-token-hint">Se guarda solo en tu PC, en la carpeta de datos de OBS VoiceClip.</span>
+            </div>
+            <div class="field">
+              <label for="github-repo">Repositorio para clips</label>
+              <input type="text" id="github-repo" placeholder="obs-voiceclip-media" spellcheck="false">
+              <span class="hint">Se crea público si no existe. El propietario se detecta con el token.</span>
+            </div>
+            <label class="check"><input type="checkbox" id="github-public"> <strong>Hacer público el repositorio</strong> (recomendado)</label>
+            <div class="inline">
+              <button class="btn" id="github-save" type="button">Guardar y conectar</button>
+              <button class="btn ghost small" id="github-clear" type="button">Borrar token</button>
+              <a class="btn small ghost" id="github-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver repositorio</a>
+            </div>
+            <div class="status-line" id="github-status"><span class="dot"></span><span>Configura un token para subir clips.</span></div>
+            <label class="check"><input type="checkbox" id="auto-upload"> <strong>Subir clips automáticamente</strong></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Overlay para OBS</h2>
+              <p class="card-sub">Un browser source transparente con el estado de la voz y el último clip.</p>
+            </div>
+          </div>
+          <div class="overlay-line">
+            <input type="text" id="overlay-url" readonly aria-label="URL del overlay">
+            <button class="btn small" id="copy-overlay" type="button">Copiar</button>
+          </div>
+          <div class="inline" style="margin-top: 10px;">
+            <button class="btn small primary" id="overlay-add" type="button">Añadir a la escena actual</button>
+            <a class="btn small ghost" id="overlay-open" href="#" target="_blank" rel="noopener noreferrer">Abrir prueba</a>
+          </div>
+          <div class="field" style="margin-top: 10px;">
+            <label for="overlay-position">Posición en pantalla</label>
+            <select id="overlay-position">
+              <option value="top-right">Arriba a la derecha</option>
+              <option value="top-left">Arriba a la izquierda</option>
+              <option value="bottom-right">Abajo a la derecha</option>
+              <option value="bottom-left">Abajo a la izquierda</option>
+            </select>
+          </div>
+          <div class="overlay-preview">
+            <span class="preview-label">Vista previa</span>
+            <iframe id="overlay-preview" src="/overlay?preview=1" title="Vista previa del overlay" loading="lazy"></iframe>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Replay Buffer</h2>
+              <p class="card-sub">OBS guarda los últimos segundos en memoria; el clip sale de ahí.</p>
+            </div>
+          </div>
+          <div class="stack">
+            <label class="check"><input type="checkbox" id="auto-start"> <strong>Iniciar automáticamente</strong> al abrir OBS o empezar a emitir</label>
+            <div class="status-line" id="replay-detail"><span class="dot"></span><span>—</span></div>
+            <div class="inline">
+              <button class="btn small" id="replay-fix" type="button">Aplicar duración y reiniciar</button>
+              <button class="btn small ghost" id="replay-start" type="button">Iniciar Replay Buffer</button>
+            </div>
+            <div class="hint" id="restart-hint" hidden>OBS necesita reiniciarse una vez para crear el Replay Buffer. Ciérralo y vuelve a abrirlo.</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Ajustes y ayuda</h2>
+              <p class="card-sub">Diagnóstico, logs y actualizaciones.</p>
+            </div>
+          </div>
+          <div class="stack">
+            <label class="check"><input type="checkbox" id="auto-update-check"> <strong>Buscar actualizaciones al abrir OBS</strong></label>
+            <div class="inline">
+              <button class="btn small" id="check-update" type="button">Comprobar ahora</button>
+              <span class="status-line tiny" id="update-status"><span class="dot"></span><span>—</span></span>
+            </div>
+            <div class="details">
+              <summary>Detalles técnicos</summary>
+              <div class="details-body stack">
+                <div class="tiny muted">Panel: <span class="mono" id="panel-url">—</span></div>
+                <div class="tiny muted">Log: <span class="mono" id="log-path">—</span></div>
+                <div class="tiny muted">Datos: <span class="mono" id="data-path">—</span></div>
+                <div class="inline">
+                  <button class="btn small ghost" id="copy-panel" type="button">Copiar URL del panel</button>
+                  <button class="btn small ghost" id="copy-logs" type="button">Copiar ruta de logs</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      ObsVoiceClip <span id="footer-version">v1.0.0</span> · Vosk offline · <a href="https://github.com/joseestebanmarinrincones-dot/obs-voiceclip" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </footer>
+  </div>
+
+  <script src="/static/panel.js"></script>
+</body>
+</html>

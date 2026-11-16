@@ -1,0 +1,23 @@
+ObsVoiceClip - Clips por voz para OBS
+=====================================
+
+1. Cierra OBS completamente.
+2. Extrae el ZIP y ejecuta Instalar.bat.
+3. Abre OBS.
+4. Usa el dock VoiceClip (o abre http://127.0.0.1:17877/panel).
+5. Elige microfono/audio y espera a que se descargue el modelo (~40 MB).
+6. Pega tu token de GitHub y pulsa "Guardar y conectar".
+7. Pulsa "Anadir a la escena actual" para crear el overlay.
+8. Di "clip" o "guarda clip" mientras emites/grabas.
+
+Si OBS pide reiniciar para el Replay Buffer, cierra OBS y vuelve a abrirlo.
+
+El token y los clips: el token se guarda SOLO en tu PC. Los clips que se suban
+a GitHub son PUBLICOS. Usa un token limitado y borralo desde el panel si hace
+falta.
+
+Panel: http://127.0.0.1:17877/panel
+Overlay: http://127.0.0.1:17877/overlay?overlay=1
+Logs: %LOCALAPPDATA%\ObsVoiceClip\logs
+
+Mas informacion en README.md.

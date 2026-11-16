@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>ObsVoiceClip Overlay</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="overlay-page">
+  <div id="overlay-root" class="pos-top-right">
+    <div class="ov-anchor">
+      <div class="ov-card" id="voice-card">
+        <div class="ov-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2.5" width="6" height="11" rx="3"></rect>
+            <path d="M5.5 10.5a6.5 6.5 0 0 0 13 0"></path>
+            <path d="M12 17v4.5"></path>
+            <path d="M8.5 21.5h7"></path>
+          </svg>
+        </div>
+        <div class="ov-main">
+          <div class="ov-title"><span class="live-dot" id="voice-dot"></span><span id="voice-title">VoiceClip</span></div>
+          <div class="ov-sub" id="voice-sub">Conectando…</div>
+        </div>
+        <div class="ov-meter" id="voice-meter" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="ov-toast" id="clip-toast" hidden>
+        <div class="ov-toast-kicker"><span>●</span><span id="toast-kicker">CLIP GUARDADO</span></div>
+        <div class="ov-toast-title" id="toast-title">Clip guardado</div>
+        <a class="ov-toast-link" id="toast-link" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+      </div>
+
+      <div class="ov-controls" id="controls" hidden>
+        <select id="overlay-duration" aria-label="Duración del clip"></select>
+        <button id="overlay-save" class="primary" type="button">Guardar clip</button>
+      </div>
+
+      <div class="ov-connection" id="connection">LOCAL · VOICECLIP</div>
+    </div>
+  </div>
+  <script src="/static/overlay.js"></script>
+</body>
+</html>
