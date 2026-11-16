@@ -13,9 +13,10 @@ $dist = Join-Path $root "dist"
 $stageRoot = Join-Path $dist "ObsVoiceClip"
 $zipPath = Join-Path $dist "obs-voiceclip-v$Version.zip"
 
-$helperExe = Join-Path $root "helper\voice_helper.exe"
+$helperBuild = Join-Path $root "dist\voice_helper"
+$helperExe = Join-Path $helperBuild "voice_helper.exe"
 if (-not (Test-Path -LiteralPath $helperExe)) {
-    throw "Falta helper\voice_helper.exe. Ejecuta tools\build_helper.ps1 primero."
+    throw "Falta dist\voice_helper\voice_helper.exe. Ejecuta tools\build_helper.ps1 primero."
 }
 if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $stageRoot | Out-Null
@@ -33,13 +34,14 @@ $webStage = Join-Path $stageRoot "web"
 New-Item -ItemType Directory -Force -Path $webStage | Out-Null
 Copy-Item -Path (Join-Path $root "web\*") -Destination $webStage -Recurse -Force
 
-# Helper: EXE versionado y fuente. No incluir vendor (los DLL van dentro del EXE).
-# El nombre versionado evita que una actualizacion falle si el EXE anterior
+# Helper: carpeta versionada (PyInstaller onedir) y fuente.
+# La carpeta versionada evita que una actualizacion falle si el helper anterior
 # sigue bloqueado por un proceso auxiliar que aun se esta cerrando.
 $helperStage = Join-Path $stageRoot "helper"
 New-Item -ItemType Directory -Force -Path $helperStage | Out-Null
-$versionedHelper = Join-Path $helperStage ("voice_helper-$Version.exe")
-Copy-Item -LiteralPath $helperExe -Destination $versionedHelper -Force
+$versionedHelperDir = Join-Path $helperStage ("voice_helper-$Version")
+New-Item -ItemType Directory -Force -Path $versionedHelperDir | Out-Null
+Copy-Item -Path (Join-Path $helperBuild "*") -Destination $versionedHelperDir -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $root "helper\voice_helper.py") -Destination $helperStage -Force
 
 # Instalador

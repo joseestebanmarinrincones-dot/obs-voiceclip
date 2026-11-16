@@ -37,7 +37,7 @@ if ($resolvedVosk -ne $resolvedVendor) {
 }
 
 & $Python -m PyInstaller `
-    --noconfirm --clean --onefile --noconsole `
+    --noconfirm --clean --onedir --noconsole `
     --name voice_helper `
     --distpath $dist `
     --workpath $work `
@@ -47,7 +47,7 @@ if ($resolvedVosk -ne $resolvedVendor) {
     (Join-Path $helperDir "voice_helper.py")
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller fallo" }
 
-$built = Join-Path $dist "voice_helper.exe"
+$built = Join-Path $dist "voice_helper\voice_helper.exe"
 if (-not (Test-Path -LiteralPath $built)) { throw "No se genero $built" }
-Copy-Item -LiteralPath $built -Destination (Join-Path $helperDir "voice_helper.exe") -Force
-Write-Host "Listo: $(Join-Path $helperDir 'voice_helper.exe') ($([math]::Round((Get-Item (Join-Path $helperDir 'voice_helper.exe')).Length / 1MB, 1)) MB)"
+$folderSize = (Get-ChildItem (Split-Path $built) -Recurse -File | Measure-Object Length -Sum).Sum
+Write-Host "Listo: $built ($([math]::Round($folderSize / 1MB, 1)) MB en carpeta)"

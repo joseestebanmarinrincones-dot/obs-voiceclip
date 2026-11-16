@@ -47,7 +47,7 @@ import obspython as obs
 # ---------------------------------------------------------------------------
 
 APP_NAME = "ObsVoiceClip"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 PLUGIN_REPO = "joseestebanmarinrincones-dot/obs-voiceclip"
 PLUGIN_RELEASE_ASSET_PREFIX = "obs-voiceclip-"
 DEFAULT_PORT = 17877
@@ -285,11 +285,15 @@ def human_size(size: int) -> str:
     return f"{size} B"
 
 
-def find_free_port(preferred: int, host: str = "127.0.0.1") -> int:
+def find_free_port(preferred: int, host: str = "127.0.0.1", exclusive: bool = False) -> int:
     for port in range(int(preferred), int(preferred) + 40):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                # En Windows SO_REUSEADDR puede permitir que dos procesos
+                # escuchen el mismo puerto. Para el helper usamos un bind
+                # exclusivo y asi no reutilizamos un puerto ocupado.
+                if not exclusive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.bind((host, port))
                 return port
         except OSError:
@@ -716,23 +720,41 @@ class HelperProcess:
         self.last_error = ""
         self.starting = False
         self._monitor: threading.Thread | None = None
+        self._health_failures = 0
+        self._last_restart = 0.0
 
     def helper_command(self) -> list[str] | None:
         helper_dir = SCRIPT_DIR / "helper"
-        # Los instaladores nuevos usan voice_helper-<version>.exe. Asi una
-        # actualizacion puede escribir un EXE nuevo aunque el anterior siga
-        # bloqueado unos segundos por PyInstaller.
-        versioned: list[tuple[tuple[int, ...], Path]] = []
+        # Formato actual: carpeta versionada helper/voice_helper-<version>/
+        # (PyInstaller onedir). Evita el bootloader padre/hijo de onefile y
+        # permite actualizar creando una carpeta nueva aunque la anterior
+        # siga bloqueada unos segundos.
+        versioned_dirs: list[tuple[tuple[int, ...], Path]] = []
+        try:
+            for candidate in helper_dir.glob("voice_helper-*"):
+                if not candidate.is_dir():
+                    continue
+                match = re.search(r"voice_helper-(\d+(?:\.\d+)*)$", candidate.name, re.I)
+                exe = candidate / "voice_helper.exe"
+                if match and exe.is_file():
+                    versioned_dirs.append((version_tuple(match.group(1)), exe))
+        except Exception:
+            versioned_dirs = []
+        if versioned_dirs:
+            versioned_dirs.sort(key=lambda item: item[0], reverse=True)
+            return [str(versioned_dirs[0][1])]
+        # Compatibilidad con instalaciones onefile de versiones anteriores.
+        versioned_files: list[tuple[tuple[int, ...], Path]] = []
         try:
             for candidate in helper_dir.glob("voice_helper-*.exe"):
                 match = re.search(r"voice_helper-(\d+(?:\.\d+)*)\.exe$", candidate.name, re.I)
                 if match:
-                    versioned.append((version_tuple(match.group(1)), candidate))
+                    versioned_files.append((version_tuple(match.group(1)), candidate))
         except Exception:
-            versioned = []
-        if versioned:
-            versioned.sort(key=lambda item: item[0], reverse=True)
-            return [str(versioned[0][1])]
+            versioned_files = []
+        if versioned_files:
+            versioned_files.sort(key=lambda item: item[0], reverse=True)
+            return [str(versioned_files[0][1])]
         exe = helper_dir / "voice_helper.exe"
         if exe.is_file():
             return [str(exe)]
@@ -800,7 +822,7 @@ class HelperProcess:
                 "voice", {"state": "error", "error": self.last_error, "helper_running": False, "helper_pid": 0}
             )
             return False
-        port = find_free_port(17878)
+        port = find_free_port(17878, exclusive=True)
         token = secrets.token_urlsafe(24)
         with self.lock:
             self.port = port
@@ -996,10 +1018,26 @@ class HelperProcess:
             return
         try:
             self.apply_health(self.health(timeout=2.5))
+            self._health_failures = 0
         except Exception as exc:
+            self._health_failures += 1
             current = STATE.snapshot().get("voice", {}).get("state")
             if current == "listening":
                 log(f"Health del helper fallo: {exc}", logging.WARNING)
+            # Si el helper quedo vivo pero su API ya no responde (por ejemplo
+            # tras un fallo del dispositivo de audio), lo reiniciamos una vez.
+            if current == "listening" and self._health_failures >= 3:
+                now = time.time()
+                if now - self._last_restart > 20.0:
+                    self._last_restart = now
+                    self._health_failures = 0
+                    STATE.update_nested(
+                        "voice",
+                        {"state": "starting", "error": "Reiniciando el reconocimiento de voz..."},
+                        force=True,
+                    )
+                    STATE.add_notice("Reiniciando el reconocimiento de voz...", "info")
+                    self.start_async(CONFIG)
 
 
 # ---------------------------------------------------------------------------

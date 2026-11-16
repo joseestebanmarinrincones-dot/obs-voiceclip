@@ -41,7 +41,7 @@ except Exception:  # pragma: no cover - el error se reporta por HTTP
     pyaudio = None
 
 APP_NAME = "ObsVoiceClip"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 DEFAULT_TRIGGERS = [
 
     "clip",
@@ -574,9 +574,19 @@ class App:
     def load_model_and_start(self) -> None:
         try:
             self.update_state(state="loading", error=None)
-            dll_dir = Path(self.args.vosk_dll) if self.args.vosk_dll else Path(__file__).resolve().parent / "vendor" / "vosk"
-            if not dll_dir.is_dir():
-                dll_dir = Path(__file__).resolve().parent / "vendor" / "vosk"
+            candidates = []
+            if self.args.vosk_dll:
+                candidates.append(Path(self.args.vosk_dll))
+            meipass = getattr(sys, "_MEIPASS", "")
+            if meipass:
+                candidates.append(Path(meipass) / "vendor" / "vosk")
+                candidates.append(Path(meipass) / "_internal" / "vendor" / "vosk")
+            if getattr(sys, "frozen", False):
+                candidates.append(Path(sys.executable).resolve().parent / "vendor" / "vosk")
+                candidates.append(Path(sys.executable).resolve().parent / "_internal" / "vendor" / "vosk")
+            candidates.append(Path(__file__).resolve().parent / "vendor" / "vosk")
+            candidates.append(Path(__file__).resolve().parent.parent / "vendor" / "vosk")
+            dll_dir = next((c for c in candidates if (c / "libvosk.dll").is_file()), candidates[-1])
             self.vosk = VoskLibrary(dll_dir)
             if not path_has_model(self.model_path):
                 raise RuntimeError(
@@ -739,6 +749,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1")
+        self.send_header("Connection", "close")
+        self.close_connection = True
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -815,7 +827,9 @@ class ApiHandler(BaseHTTPRequestHandler):
 
 class HelperServer(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    # En Windows SO_REUSEADDR puede permitir que dos procesos compartan el
+    # puerto. Preferimos fallar y que el plugin elija otro puerto libre.
+    allow_reuse_address = os.name != "nt"
 
     def __init__(self, address, handler, app: App, token: str):
         super().__init__(address, handler)
